@@ -6,9 +6,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiResponse<T> {
-    private String result;   // "SUCCESS" or "ERROR"
-    private String message;  // success or error message
-    private T data;          // any payload
+    private String result;
+    private String message;
+    private T data;
 
     // Helper methods for convenience
     public static <T> ApiResponse<T> success(String message, T data) {

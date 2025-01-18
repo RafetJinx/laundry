@@ -23,15 +23,12 @@ public class MailService {
     private String resetPasswordUrl;
 
     public void sendResetPasswordEmail(User user, String token) {
-        // build reset link
         String link = resetPasswordUrl + "?token=" + token;
 
-        // prepare thymeleaf context
         Context context = new Context();
         context.setVariable("name", user.getDisplayName() != null ? user.getDisplayName() : user.getUsername());
         context.setVariable("resetLink", link);
 
-        // render template
         String htmlBody = templateEngine.process("reset-password-email.html", context);
 
         // send mail

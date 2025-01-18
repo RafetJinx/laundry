@@ -30,12 +30,8 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private MailService mailService;
 
-    /**
-     * Create a new User
-     */
     @Override
     public UserResponseDto createUser(UserRequestDto dto) throws UserAlreadyExistsException {
-        // 1) Check username and email conflicts
         if (userRepository.existsByUsername(dto.getUsername())) {
             throw new UserAlreadyExistsException("Username already exists: " + dto.getUsername());
         }
@@ -43,19 +39,13 @@ public class UserServiceImpl implements UserService {
             throw new UserAlreadyExistsException("Email already in use: " + dto.getEmail());
         }
 
-        // 2) Map DTO -> Entity
         User user = UserMapper.toEntity(dto);
-        // 3) Encode password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // 4) Save & return DTO
         userRepository.save(user);
         return UserMapper.toResponseDto(user);
     }
 
-    /**
-     * Update a user (full update via PUT)
-     */
     @Override
     public UserResponseDto updateUser(Long id,
                                       UserRequestDto dto,
@@ -66,12 +56,10 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
 
-        // If not admin, must be self
         if (!"ROLE_ADMIN".equals(currentUserRole) && !user.getId().equals(currentUserId)) {
             throw new AccessDeniedException("You cannot update another user's profile");
         }
 
-        // Check conflicts on username / email if changed
         if (!user.getUsername().equals(dto.getUsername())
                 && userRepository.existsByUsername(dto.getUsername())) {
             throw new UserAlreadyExistsException("Username already exists: " + dto.getUsername());
@@ -81,11 +69,8 @@ public class UserServiceImpl implements UserService {
             throw new UserAlreadyExistsException("Email already in use: " + dto.getEmail());
         }
 
-        // Map DTO -> a temporary entity
-        // (so we can easily copy fields without losing the existing ID/createdAt)
         User temp = UserMapper.toEntity(dto);
 
-        // Overwrite fields
         user.setUsername(temp.getUsername());
         user.setDisplayName(temp.getDisplayName());
         user.setEmail(temp.getEmail());
@@ -93,7 +78,6 @@ public class UserServiceImpl implements UserService {
         user.setAddress(temp.getAddress());
         user.setRole(temp.getRole());
 
-        // If password changed, encode it
         if (temp.getPassword() != null && !temp.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(temp.getPassword()));
         }
@@ -102,9 +86,6 @@ public class UserServiceImpl implements UserService {
         return UserMapper.toResponseDto(user);
     }
 
-    /**
-     * Partially update a user (PATCH)
-     */
     @Override
     public UserResponseDto patchUser(Long id,
                                      UserRequestDto dto,
@@ -172,9 +153,6 @@ public class UserServiceImpl implements UserService {
         return UserMapper.toResponseDto(user);
     }
 
-    /**
-     * Delete user (with self/admin check)
-     */
     @Override
     public void deleteUser(Long id,
                            Long currentUserId,
@@ -191,9 +169,6 @@ public class UserServiceImpl implements UserService {
         userRepository.delete(user);
     }
 
-    /**
-     * Initiate Password Reset by email
-     */
     @Override
     public void initiatePasswordReset(String email) throws NotFoundException {
         User user = userRepository.findByEmail(email)
@@ -207,9 +182,6 @@ public class UserServiceImpl implements UserService {
         mailService.sendResetPasswordEmail(user, token);
     }
 
-    /**
-     * Reset password using a token
-     */
     @Override
     public void resetPasswordWithToken(String token, String newPassword) throws NotFoundException {
         User user = userRepository.findByResetToken(token)
@@ -222,9 +194,6 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    /**
-     * Change password for a logged-in user (verify old password)
-     */
     @Override
     public void changePasswordLoggedIn(Long currentUserId, String oldPassword, String newPassword)
             throws NotFoundException, AccessDeniedException {

@@ -11,11 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 
-/**
- * Tek tablo, tek rol.
- * "Uygulama"nın sabit user/pass'ını config'den alıp,
- * yoksa DB'den arayan basit bir AuthenticationProvider örneği.
- */
 @Component
 public class AuthProvider implements AuthenticationProvider {
 
@@ -39,7 +34,6 @@ public class AuthProvider implements AuthenticationProvider {
         String username = authentication.getName();
         String rawPassword = authentication.getCredentials().toString();
 
-        // 1) application.properties'de tanımlı sabit user/pass kontrolü
         if (!propertyUsername.isBlank()
                 && !propertyPassword.isBlank()
                 && username.equals(propertyUsername)
@@ -51,7 +45,6 @@ public class AuthProvider implements AuthenticationProvider {
             );
         }
 
-        // 2) DB kontrolü
         try {
             LaundryUserDetails userDetails = (LaundryUserDetails) userDetailsService.loadUserByUsername(username);
             if (userDetails != null && passwordEncoder.matches(rawPassword, userDetails.getPassword())) {
@@ -62,7 +55,7 @@ public class AuthProvider implements AuthenticationProvider {
                 );
             }
         } catch (UsernameNotFoundException e) {
-            // Kayıt yok
+            throw new BadCredentialsException("Bad credentials");
         }
 
         throw new BadCredentialsException("Bad credentials");

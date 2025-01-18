@@ -16,10 +16,6 @@ import javax.crypto.SecretKey;
 import java.util.*;
 import java.util.function.Function;
 
-/**
- * Manages JWT token creation/validation,
- * plus some convenience methods for extracting the current user from Authentication.
- */
 @Service
 public class JwtUtil {
 
@@ -44,8 +40,6 @@ public class JwtUtil {
     private SecretKey getSignInKey() {
         return signInKey;
     }
-
-    // --- Basic token claims extraction ---
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -85,7 +79,6 @@ public class JwtUtil {
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             claims.put("userId", user.getId());
-            // If role is "ADMIN", store "ROLE_ADMIN" in claims, etc.
             claims.put("role", "ROLE_" + user.getRole());
         }
         return createToken(claims, userDetails.getUsername());
@@ -104,13 +97,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    // --- Additional convenience methods ---
-
-    /**
-     * If your Authentication principal is a custom user details containing userId,
-     * or if your JWT is included in a Bearer token and you've put userId in the claims,
-     * you can retrieve it here.
-     */
     public static Long getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof LaundryUserDetails)) {
             return null;

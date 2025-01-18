@@ -12,9 +12,6 @@ import java.util.List;
 @Builder
 public class OrderRequestDto {
 
-    // userId - hangi kullanıcıya ait?
-    // Create'de (admin iseniz) set edebilirsiniz, normal user kendisi sipariş oluşturursa
-    // Service katmanında "currentUser" üzerinden override de yapılabilir.
     @JsonView(Views.Create.class)
     @NotNull(
             groups = ValidationGroups.Create.class,
@@ -22,7 +19,6 @@ public class OrderRequestDto {
     )
     Long userId;
 
-    // totalAmount
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
@@ -35,7 +31,6 @@ public class OrderRequestDto {
     )
     BigDecimal totalAmount;
 
-    // currencyCode
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
@@ -52,7 +47,6 @@ public class OrderRequestDto {
     )
     String currencyCode;
 
-    // paymentStatus (ör: PENDING, PAID, CANCELLED)
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @Size(
             max = 50,
@@ -60,7 +54,6 @@ public class OrderRequestDto {
     )
     String paymentStatus;
 
-    // orderStatus (ör: "YIKAMA", "KURUTMA", "ÜTÜLEME", "PAKETLEME", "BARKODLAMA")
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @Size(
             max = 50,
@@ -68,7 +61,6 @@ public class OrderRequestDto {
     )
     String orderStatus;
 
-    // orderItems: Siparişi oluştururken eklenecek item'lar
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     List<OrderItemRequestDto> orderItems;
 }

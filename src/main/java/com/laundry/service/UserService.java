@@ -32,13 +32,10 @@ public interface UserService {
                     String currentUserRole)
             throws NotFoundException, AccessDeniedException;
 
-    // 1) For "forgot password" flow
     void initiatePasswordReset(String email) throws NotFoundException;
 
-    // 2) For "reset password" with token
     void resetPasswordWithToken(String token, String newPassword) throws NotFoundException;
 
-    // 3) For logged-in user wanting to change password
     void changePasswordLoggedIn(Long currentUserId, String oldPassword, String newPassword)
             throws NotFoundException, AccessDeniedException;
 

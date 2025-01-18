@@ -24,9 +24,6 @@ public class UserRequestDto {
     )
     String username;
 
-    // 2) DISPLAY NAME (opsiyonel alan)
-    // Tüm senaryolarda (Create, Update, Patch) gönderilebilir;
-    // ancak zorunluluk eklemiyoruz, o yüzden "NotNull" yok.
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @Size(
             max = 255,
@@ -34,9 +31,6 @@ public class UserRequestDto {
     )
     String displayName;
 
-    // 3) PASSWORD
-    // Create ve Update sırasında zorunlu, Patch için opsiyonel (örnek).
-    // "Patch" grubunu da ekleyebilir ya da eklemeyebilirsiniz. Tercih size kalmış.
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
@@ -56,8 +50,6 @@ public class UserRequestDto {
     )
     String password;
 
-    // 4) EMAIL
-    // Create ve Update’te zorunlu. Patch’te opsiyonel.
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
@@ -77,8 +69,6 @@ public class UserRequestDto {
     )
     String email;
 
-    // 5) PHONE (opsiyonel)
-    // İsterseniz Create, Update için zorunluluk ekleyebilirsiniz.
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @Size(
             max = 20,
@@ -86,7 +76,6 @@ public class UserRequestDto {
     )
     String phone;
 
-    // 6) ADDRESS (opsiyonel)
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @Size(
             max = 255,
@@ -94,9 +83,6 @@ public class UserRequestDto {
     )
     String address;
 
-    // 7) ROLE
-    // Admin, Customer vb. (Bu alanı sadece adminler değiştirebilsin diyorsanız
-    // Service/Controller katmanında kontrol edebilirsiniz.)
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @Size(
             max = 50,

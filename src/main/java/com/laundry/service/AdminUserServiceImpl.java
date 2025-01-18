@@ -19,9 +19,6 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Autowired
     private UserRepository userRepository;
 
-    /**
-     * Only admin can list all users.
-     */
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponseDto> getAllUsers() {
@@ -31,9 +28,6 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Only admin can get user by ID.
-     */
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponseDto getUserById(Long id) throws NotFoundException {
@@ -42,18 +36,12 @@ public class AdminUserServiceImpl implements AdminUserService {
         return UserMapper.toResponseDto(user);
     }
 
-    /**
-     * Only admin can update a user's role.
-     * If someone tries to set an "invalid" role, we throw an AccessDeniedException
-     * or a custom exception to indicate it's not allowed.
-     */
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponseDto updateUserRole(Long id, String newRole) throws NotFoundException {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
 
-        // Validate the new role. If you prefer, you can throw a different domain exception here.
         if (!"USER".equalsIgnoreCase(newRole) && !"ADMIN".equalsIgnoreCase(newRole)) {
             throw new AccessDeniedException("Invalid role assignment: " + newRole);
         }

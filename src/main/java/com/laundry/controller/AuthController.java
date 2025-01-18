@@ -33,28 +33,22 @@ public class AuthController {
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    /**
-     * 1) REGISTER a new user
-     */
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponseDto>> registerUser(
             @Validated @RequestBody UserRequestDto requestDto,
             Authentication authentication
     ) {
         try {
-            // 1) Check if caller is already logged in
             boolean isLoggedIn = (authentication != null && authentication.isAuthenticated());
             boolean isAdmin = (isLoggedIn
                     && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN")));
 
             if (isLoggedIn && !isAdmin) {
-                // Non-admin user is already logged in => must log out first
                 return ResponseEntity
                         .status(HttpStatus.FORBIDDEN)
                         .body(ApiResponse.error("You must logout before creating a new user"));
             }
 
-            // 2) Role logic
             String desiredRole = (requestDto.getRole() == null)
                     ? "USER"
                     : requestDto.getRole().toUpperCase();
@@ -73,7 +67,6 @@ public class AuthController {
                 throw new InvalidEmailException("Invalid email address");
             }
 
-            // Build safe DTO
             UserRequestDto safeDto = UserRequestDto.builder()
                     .username(requestDto.getUsername())
                     .password(requestDto.getPassword())
@@ -102,9 +95,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * 2) LOGIN
-     */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDto>> loginUser(
             @Validated @RequestBody LoginRequestDto loginRequest,
@@ -155,9 +145,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * 3) LOGOUT
-     */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<?>> logout(
             @RequestHeader(name = "Authorization", required = false) String authHeader,
@@ -181,9 +168,6 @@ public class AuthController {
         );
     }
 
-    /**
-     * 4) FORGOT PASSWORD => sends email with reset token
-     */
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<?>> forgotPassword(@RequestParam("email") String email) {
         try {
@@ -202,10 +186,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * 5) RESET PASSWORD => user clicks email link, we either show Thymeleaf page or
-     * we let them POST new password to this endpoint with ?token=...
-     */
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse<?>> resetPassword(
             @RequestParam("token") String token,
@@ -226,9 +206,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * 6) CHANGE PASSWORD => user is logged in, changes own password
-     */
     @PostMapping("/change-password")
     public ResponseEntity<ApiResponse<?>> changePassword(
             @RequestParam("oldPassword") String oldPassword,
@@ -241,7 +218,6 @@ public class AuthController {
                         .status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("You must be logged in to change password"));
             }
-            // get current user ID from principal
             Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
             userService.changePasswordLoggedIn(currentUserId, oldPassword, newPassword);
 
@@ -262,16 +238,11 @@ public class AuthController {
         }
     }
 
-    /**
-     * 7) CHECK AUTH STATUS => quick endpoint to see if user is logged in,
-     *   and if so, who they are.
-     */
     @GetMapping("/check-auth-status")
     public ResponseEntity<ApiResponse<?>> checkAuthStatus(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.ok(ApiResponse.success("Not logged in", null));
         } else {
-            // e.g. return the username
             return ResponseEntity.ok(ApiResponse.success(
                     "Logged in as: " + authentication.getName(), null));
         }

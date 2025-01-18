@@ -11,8 +11,6 @@ import java.math.BigDecimal;
 @Builder
 public class OrderItemRequestDto {
 
-    // serviceId (ilgili Service entity'yi temsil edecek)
-    // Create'de zorunlu, Update/Patch senaryosuna göre opsiyonel
     @JsonView(Views.Create.class)
     @NotNull(
             groups = ValidationGroups.Create.class,
@@ -20,7 +18,6 @@ public class OrderItemRequestDto {
     )
     Long serviceId;
 
-    // priceAmount
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
@@ -33,7 +30,6 @@ public class OrderItemRequestDto {
     )
     BigDecimal priceAmount;
 
-    // quantity
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},

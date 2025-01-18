@@ -39,7 +39,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(jwt);
             } catch (JwtException e) {
-                // Token parse hatası vb.
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT");
                 return;
             }
@@ -54,7 +53,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                         userDetails.getAuthorities()
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                // Security context’e setle
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } else {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT Token invalid or expired");

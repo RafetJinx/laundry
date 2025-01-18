@@ -31,9 +31,6 @@ public class Order extends AuditableBaseEntity {
     @Column(name = "payment_status", nullable = false)
     private String paymentStatus;
 
-    /**
-     * Örn: "YIKAMA", "KURUTMA", "ÜTÜLEME", "PAKETLEME", "BARKODLAMA"
-     */
     @Column(name = "order_status", nullable = false)
     private String orderStatus;
 

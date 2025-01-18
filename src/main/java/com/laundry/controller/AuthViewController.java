@@ -15,13 +15,6 @@ public class AuthViewController {
     @Autowired
     private UserService userService;
 
-    /**
-     * GET /reset-password?token=...
-     * Renders a Thymeleaf page "reset-password-form.html" if token is valid;
-     * otherwise shows "invalid-reset-token.html".
-     *
-     * This mapping is for the user clicking the link from the email (which does a GET).
-     */
     @GetMapping("/reset-password")
     public String showResetPasswordPage(@RequestParam("token") String token, Model model) {
         // 1) Check if token is valid

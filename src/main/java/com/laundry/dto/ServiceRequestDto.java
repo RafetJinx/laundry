@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 @Builder
 public class ServiceRequestDto {
 
-    // name
     @JsonView(Views.Create.class)
     @NotNull(
             groups = ValidationGroups.Create.class,
@@ -27,7 +26,6 @@ public class ServiceRequestDto {
     )
     String name;
 
-    // description (opsiyonel, tüm senaryolar için)
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @Size(
             max = 255,
@@ -35,7 +33,6 @@ public class ServiceRequestDto {
     )
     String description;
 
-    // price
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
@@ -48,7 +45,6 @@ public class ServiceRequestDto {
     )
     BigDecimal price;
 
-    // currencyCode
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},

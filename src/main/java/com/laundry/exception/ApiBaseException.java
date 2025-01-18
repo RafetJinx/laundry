@@ -1,13 +1,11 @@
 package com.laundry.exception;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
-/**
- * CHANGED: In Spring, custom exceptions typically extend RuntimeException
- * to allow transaction rollbacks as needed, and to avoid mandatory try/catch.
- */
+@Getter
 public abstract class ApiBaseException extends RuntimeException {
     private final HttpStatus status;
     private final List<ErrorDetail> errors;
@@ -18,11 +16,4 @@ public abstract class ApiBaseException extends RuntimeException {
         this.errors = errors;
     }
 
-    public HttpStatus getStatus() {
-        return status;
-    }
-
-    public List<ErrorDetail> getErrors() {
-        return errors;
-    }
 }
