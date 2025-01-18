@@ -1,0 +1,42 @@
+package com.laundry.entity;
+
+import lombok.*;
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "orders")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Order extends AuditableBaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(name = "total_amount", nullable = false)
+    private BigDecimal totalAmount;
+
+    @Column(name = "currency_code", nullable = false)
+    private String currencyCode;
+
+    @Column(name = "payment_status", nullable = false)
+    private String paymentStatus;
+
+    /**
+     * Örn: "YIKAMA", "KURUTMA", "ÜTÜLEME", "PAKETLEME", "BARKODLAMA"
+     */
+    @Column(name = "order_status", nullable = false)
+    private String orderStatus;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
+}
