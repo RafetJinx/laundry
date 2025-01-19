@@ -16,31 +16,30 @@ import static com.laundry.mapper.DateTimeUtil.formatLocalDateTime;
 
 public class OrderMapper {
 
-    public static Order toEntity(OrderRequestDto dto, User user,
+    public static Order toEntity(OrderRequestDto requestDto,
+                                 User user,
                                  List<Service> foundServices) {
-        if (dto == null) {
+        if (requestDto == null) {
             return null;
         }
         Order order = new Order();
-        order.setUser(user);  // parametre
-        order.setTotalAmount(dto.getTotalAmount());
-        order.setCurrencyCode(dto.getCurrencyCode());
-        order.setPaymentStatus(dto.getPaymentStatus());
-        order.setOrderStatus(dto.getOrderStatus());
+        order.setUser(user);
+        order.setTotalAmount(requestDto.getTotalAmount());
+        order.setCurrencyCode(requestDto.getCurrencyCode());
+        order.setPaymentStatus(
+                requestDto.getPaymentStatus() != null
+                        ? requestDto.getPaymentStatus()
+                        : "PENDING"
+        );
+        order.setOrderStatus(
+                requestDto.getOrderStatus() != null
+                        ? requestDto.getOrderStatus()
+                        : "CREATED"
+        );
 
-        if (dto.getOrderItems() != null && !dto.getOrderItems().isEmpty()) {
-            List<OrderItem> itemEntities = new ArrayList<>();
-
-            for (OrderItemRequestDto itemDto : dto.getOrderItems()) {
-                Service matchedService = foundServices.stream()
-                        .filter(svc -> svc.getId().equals(itemDto.getServiceId()))
-                        .findFirst()
-                        .orElse(null);
-
-                OrderItem itemEntity = OrderItemMapper.toEntity(itemDto, order, matchedService);
-                itemEntities.add(itemEntity);
-            }
-            order.setOrderItems(itemEntities);
+        if (requestDto.getOrderItems() != null && !requestDto.getOrderItems().isEmpty()) {
+            List<OrderItem> orderItems = buildOrderItems(order, requestDto, foundServices);
+            order.setOrderItems(orderItems);
         }
         return order;
     }
@@ -68,5 +67,49 @@ public class OrderMapper {
                 .updatedAt(formatLocalDateTime(order.getUpdatedAt()))
                 .orderItems(itemDtos)
                 .build();
+    }
+
+    public static void updateEntity(Order existing,
+                                    OrderRequestDto requestDto,
+                                    List<Service> foundServices) {
+        if (requestDto.getTotalAmount() != null) {
+            existing.setTotalAmount(requestDto.getTotalAmount());
+        }
+        if (requestDto.getCurrencyCode() != null) {
+            existing.setCurrencyCode(requestDto.getCurrencyCode());
+        }
+        if (requestDto.getPaymentStatus() != null) {
+            existing.setPaymentStatus(requestDto.getPaymentStatus());
+        }
+        if (requestDto.getOrderStatus() != null) {
+            existing.setOrderStatus(requestDto.getOrderStatus());
+        }
+
+        if (requestDto.getOrderItems() != null) {
+            List<OrderItem> updatedItems = buildOrderItems(existing, requestDto, foundServices);
+            existing.getOrderItems().clear();
+            existing.getOrderItems().addAll(updatedItems);
+        }
+    }
+
+    private static List<OrderItem> buildOrderItems(Order existing, OrderRequestDto requestDto, List<Service> foundServices) {
+        List<OrderItem> updatedItems = new ArrayList<>();
+        for (OrderItemRequestDto itemDto : requestDto.getOrderItems()) {
+            Service matchedService = (foundServices == null) ? null
+                    : foundServices.stream()
+                    .filter(svc -> svc.getId().equals(itemDto.getServiceId()))
+                    .findFirst()
+                    .orElse(null);
+
+            OrderItem itemEntity = OrderItemMapper.toEntity(itemDto, existing, matchedService);
+            updatedItems.add(itemEntity);
+        }
+        return updatedItems;
+    }
+
+    public static void patchEntity(Order existing,
+                                   OrderRequestDto requestDto,
+                                   List<Service> foundServices) {
+        updateEntity(existing, requestDto, foundServices);
     }
 }
