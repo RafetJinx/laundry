@@ -1,0 +1,13 @@
+package com.laundry.exception;
+
+import org.springframework.http.HttpStatus;
+import java.util.List;
+
+public class UnauthorizedException extends ApiBaseException {
+    public UnauthorizedException(String reason) {
+        super(HttpStatus.UNAUTHORIZED, reason, null);
+    }
+    public UnauthorizedException(String reason, List<ErrorDetail> errors) {
+        super(HttpStatus.UNAUTHORIZED, reason, errors);
+    }
+}
