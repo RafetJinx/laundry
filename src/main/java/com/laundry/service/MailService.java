@@ -41,4 +41,3 @@ public class MailService {
         mailSender.send(preparator);
     }
 }
-
