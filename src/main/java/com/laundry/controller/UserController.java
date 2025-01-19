@@ -1,15 +1,12 @@
 package com.laundry.controller;
 
 import com.laundry.dto.*;
-import com.laundry.exception.*;
 import com.laundry.security.JwtUtil;
 import com.laundry.service.UserService;
-import com.laundry.util.EmailUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,28 +24,10 @@ public class UserController {
             @Validated @RequestBody UserRequestDto requestDto,
             Authentication authentication
     ) {
-        try {
-            Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
-            String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
-
-            UserResponseDto updated = userService.updateUser(id, requestDto, currentUserId, currentUserRole);
-            return ResponseEntity.ok(ApiResponse.success("User updated successfully", updated));
-        } catch (NotFoundException e) {
-            log.error("User not found", e);
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (UserAlreadyExistsException e) {
-            log.error("User conflict", e);
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (AccessDeniedException e) {
-            log.error("Forbidden", e);
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+        Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
+        String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
+        UserResponseDto updated = userService.updateUser(id, requestDto, currentUserId, currentUserRole);
+        return ResponseEntity.ok(ApiResponse.success("User updated successfully", updated));
     }
 
     @PatchMapping("/{id}")
@@ -57,28 +36,10 @@ public class UserController {
             @RequestBody UserRequestDto requestDto,
             Authentication authentication
     ) {
-        try {
-            Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
-            String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
-
-            UserResponseDto patched = userService.patchUser(id, requestDto, currentUserId, currentUserRole);
-            return ResponseEntity.ok(ApiResponse.success("User patched successfully", patched));
-        } catch (NotFoundException e) {
-            log.error("User not found", e);
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (UserAlreadyExistsException e) {
-            log.error("User conflict", e);
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (AccessDeniedException e) {
-            log.error("Forbidden", e);
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+        Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
+        String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
+        UserResponseDto patched = userService.patchUser(id, requestDto, currentUserId, currentUserRole);
+        return ResponseEntity.ok(ApiResponse.success("User patched successfully", patched));
     }
 
     @GetMapping("/{id}")
@@ -86,23 +47,10 @@ public class UserController {
             @PathVariable Long id,
             Authentication authentication
     ) {
-        try {
-            Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
-            String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
-
-            UserResponseDto user = userService.getUserById(id, currentUserId, currentUserRole);
-            return ResponseEntity.ok(ApiResponse.success("User found", user));
-        } catch (NotFoundException e) {
-            log.error("User not found", e);
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (AccessDeniedException e) {
-            log.error("Forbidden", e);
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+        Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
+        String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
+        UserResponseDto user = userService.getUserById(id, currentUserId, currentUserRole);
+        return ResponseEntity.ok(ApiResponse.success("User found", user));
     }
 
     @DeleteMapping("/{id}")
@@ -110,22 +58,9 @@ public class UserController {
             @PathVariable Long id,
             Authentication authentication
     ) {
-        try {
-            Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
-            String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
-
-            userService.deleteUser(id, currentUserId, currentUserRole);
-            return ResponseEntity.ok(ApiResponse.success("User deleted", null));
-        } catch (NotFoundException e) {
-            log.error("User not found", e);
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (AccessDeniedException e) {
-            log.error("Forbidden", e);
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+        Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
+        String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
+        userService.deleteUser(id, currentUserId, currentUserRole);
+        return ResponseEntity.ok(ApiResponse.success("User deleted", null));
     }
 }

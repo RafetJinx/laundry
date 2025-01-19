@@ -1,8 +1,8 @@
 package com.laundry.entity;
 
-import lombok.*;
 import jakarta.persistence.*;
-import java.math.BigDecimal;
+import lombok.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,13 +21,12 @@ public class Service extends AuditableBaseEntity {
     @Column(nullable = false)
     private String name;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private BigDecimal price;
-
-    @Column(name = "currency_code", nullable = false)
-    private String currencyCode;
+    @OneToMany(mappedBy = "service", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ServicePrice> servicePrices = new ArrayList<>();
 
     @OneToMany(mappedBy = "service")
     private List<OrderItem> orderItems = new ArrayList<>();
