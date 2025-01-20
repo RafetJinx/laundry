@@ -3,20 +3,20 @@ package com.laundry.service;
 import com.laundry.dto.OrderItemRequestDto;
 import com.laundry.dto.OrderRequestDto;
 import com.laundry.dto.OrderResponseDto;
-import com.laundry.entity.Order;
-import com.laundry.entity.Service;
-import com.laundry.entity.User;
+import com.laundry.entity.*;
 import com.laundry.exception.AccessDeniedException;
 import com.laundry.exception.BadRequestException;
 import com.laundry.exception.NotFoundException;
 import com.laundry.helper.RoleGuard;
 import com.laundry.mapper.OrderMapper;
-import com.laundry.repository.OrderRepository;
-import com.laundry.repository.ServiceRepository;
-import com.laundry.repository.UserRepository;
+import com.laundry.repository.*;
+import com.laundry.util.OrderUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,6 +34,13 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private ServiceRepository serviceRepository;
 
+    @Autowired
+    private ServicePriceRepository servicePriceRepository;
+    @Autowired
+    private OrderSHistoryRepository orderSHistoryRepository;
+    @Autowired
+    private OrderPSHistoryRepository orderPSHistoryRepository;
+
     @Override
     public OrderResponseDto createOrder(OrderRequestDto requestDto,
                                         Long currentUserId,
@@ -43,16 +50,16 @@ public class OrderServiceImpl implements OrderService {
         User user = userRepository.findById(requestDto.getUserId())
                 .orElseThrow(() -> new NotFoundException("User not found: " + requestDto.getUserId()));
 
-        // If admin, can create an order for any user; if not admin, user must match
-        if (!"ROLE_ADMIN".equals(currentUserRole) && !user.getId().equals(currentUserId)) {
-            throw new AccessDeniedException("You do not have permission to create an order for this user");
-        }
+        RoleGuard.requireAdminRole(currentUserRole, "You do not have permission to create an order");
 
-        List<Long> serviceIds = extractServiceIds(requestDto);
-        List<Service> foundServices = serviceRepository.findAllById(serviceIds);
+        List<Service> foundServices = serviceRepository.findAllById(extractServiceIds(requestDto));
 
         Order order = OrderMapper.toEntity(requestDto, user, foundServices);
+        autoCalculateItemPrices(order);
+        order.setTotalAmount(OrderUtil.computeOrderItemsTotal(order.getOrderItems()));
+
         orderRepository.save(order);
+
         return OrderMapper.toResponseDto(order);
     }
 
@@ -67,10 +74,14 @@ public class OrderServiceImpl implements OrderService {
         RoleGuard.requireAdminRole(currentUserRole, "You do not have permission to update this order");
 
         List<Long> serviceIds = extractServiceIds(requestDto);
-        List<Service> foundServices = serviceRepository.findAllById(serviceIds);
+        List<Service> foundServices = serviceRepository.findAllById(extractServiceIds(requestDto));
 
-        OrderMapper.updateEntity(existing, requestDto, foundServices);
+        updateEntity(existing, requestDto, foundServices, currentUserId);
+        autoCalculateItemPrices(existing);
+        existing.setTotalAmount(OrderUtil.computeOrderItemsTotal(existing.getOrderItems()));
+
         orderRepository.save(existing);
+
         return OrderMapper.toResponseDto(existing);
     }
 
@@ -78,16 +89,15 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponseDto patchOrder(Long id,
                                        OrderRequestDto requestDto,
                                        Long currentUserId,
-                                       String currentUserRole)
-            throws NotFoundException, AccessDeniedException, BadRequestException {
-
+                                       String currentUserRole) {
         Order existing = getExistingOrder(id);
-        RoleGuard.requireAdminRole(currentUserRole, "You do not have permission to patch this order");
+        RoleGuard.requireAdminRole(currentUserRole, "No permission to patch this order");
+        List<Service> foundServices = serviceRepository.findAllById(extractServiceIds(requestDto));
 
-        List<Long> serviceIds = extractServiceIds(requestDto);
-        List<Service> foundServices = serviceRepository.findAllById(serviceIds);
+        patchEntity(existing, requestDto, foundServices, currentUserId);
+        autoCalculateItemPrices(existing);
+        existing.setTotalAmount(OrderUtil.computeOrderItemsTotal(existing.getOrderItems()));
 
-        OrderMapper.patchEntity(existing, requestDto, foundServices);
         orderRepository.save(existing);
         return OrderMapper.toResponseDto(existing);
     }
@@ -100,10 +110,9 @@ public class OrderServiceImpl implements OrderService {
             throws NotFoundException, AccessDeniedException {
 
         Order order = getExistingOrder(id);
-        // If not admin, must be the owner
-        if (!"ROLE_ADMIN".equals(currentUserRole) && !order.getUser().getId().equals(currentUserId)) {
-            throw new AccessDeniedException("You do not have permission to view this order");
-        }
+
+        RoleGuard.requireAdminRole(currentUserRole, "You do not have permission to view this order");
+
         return OrderMapper.toResponseDto(order);
     }
 
@@ -112,7 +121,7 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderResponseDto> getAllOrders(Long currentUserId, String currentUserRole)
             throws AccessDeniedException {
 
-        RoleGuard.requireAdminRole(currentUserRole, "Only admin can view all orders");
+        RoleGuard.requireAdminRole(currentUserRole, "You do not have permission to view all orders");
         return orderRepository.findAll().stream()
                 .map(OrderMapper::toResponseDto)
                 .collect(Collectors.toList());
@@ -127,6 +136,52 @@ public class OrderServiceImpl implements OrderService {
         Order order = getExistingOrder(id);
         RoleGuard.requireAdminRole(currentUserRole, "You do not have permission to delete this order");
         orderRepository.delete(order);
+    }
+
+    @Override
+    public OrderResponseDto advanceOrderStatus(Long orderId,
+                                               Long currentUserId,
+                                               String currentUserRole)
+            throws NotFoundException, AccessDeniedException, BadRequestException {
+
+        RoleGuard.requireAdminRole(currentUserRole, "Only admin can change order status");
+
+        Order order = getExistingOrder(orderId);
+        OrderStatus currentStatus = order.getStatus();
+        OrderStatus nextStatus;
+
+        switch (currentStatus) {
+            case PENDING -> {
+                order.setStatus(OrderStatus.IN_PROGRESS);
+                nextStatus = OrderStatus.IN_PROGRESS;
+            }
+            case IN_PROGRESS -> {
+                order.setStatus(OrderStatus.COMPLETED);
+                nextStatus = OrderStatus.COMPLETED;
+            }
+            case COMPLETED -> {
+                order.setStatus(OrderStatus.DELIVERED);
+                nextStatus = OrderStatus.DELIVERED;
+            }
+            case DELIVERED -> {
+                throw new BadRequestException("Order is already DELIVERED. No further status change possible.");
+            }
+            default -> {
+                throw new BadRequestException("Cannot advance from status: " + currentStatus);
+            }
+        }
+
+        OrderStatusHistory orderStatusHistory = new OrderStatusHistory();
+        orderStatusHistory.setOrder(order);
+        orderStatusHistory.setOldStatus(currentStatus);
+        orderStatusHistory.setNewStatus(nextStatus);
+        orderStatusHistory.setChangedAt(LocalDateTime.now());
+        orderStatusHistory.setChangedBy(currentUserId);
+
+        orderRepository.save(order);
+        orderSHistoryRepository.save(orderStatusHistory);
+
+        return OrderMapper.toResponseDto(order);
     }
 
     private Order getExistingOrder(Long id) throws NotFoundException {
@@ -144,6 +199,82 @@ public class OrderServiceImpl implements OrderService {
         return requestDto.getOrderItems().stream()
                 .map(OrderItemRequestDto::getServiceId)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    /**
+     * For patch scenarios, we use the same logic as update.
+     */
+    private void patchEntity(Order existing,
+                             OrderRequestDto requestDto,
+                             List<Service> foundServices,
+                             Long currentUserId) {
+        updateEntity(existing, requestDto, foundServices, currentUserId);
+    }
+
+    /**
+     * Updates an existing Order entity fields using the provided DTO
+     * (e.g., partial or full update).
+     */
+    public void updateEntity(Order existing,
+                             OrderRequestDto requestDto,
+                             List<Service> foundServices,
+                             Long currentUserId) {
+        if (requestDto.getCurrencyCode() != null) {
+            existing.setCurrencyCode(requestDto.getCurrencyCode());
+        }
+        if (requestDto.getPaymentStatus() != null) {
+            PaymentStatus newPaymentStatus = OrderUtil.parsePaymentStatus(requestDto.getPaymentStatus());
+
+            OrderPaymentStatusHistory orderPaymentStatusHistory = new OrderPaymentStatusHistory();
+            orderPaymentStatusHistory.setOrder(existing);
+            orderPaymentStatusHistory.setOldPaymentStatus(existing.getPaymentStatus());
+            orderPaymentStatusHistory.setNewPaymentStatus(newPaymentStatus);
+            orderPaymentStatusHistory.setChangedAt(LocalDateTime.now());
+            orderPaymentStatusHistory.setChangedBy(currentUserId);
+
+            existing.setPaymentStatus(newPaymentStatus);
+            orderPSHistoryRepository.save(orderPaymentStatusHistory);
+        }
+        if (requestDto.getOrderStatus() != null) {
+            existing.setStatus(OrderUtil.parseOrderStatus(requestDto.getOrderStatus()));
+        }
+
+        if (requestDto.getOrderItems() != null) {
+            List<OrderItem> updatedItems = OrderUtil.buildOrderItems(existing, requestDto, foundServices);
+            existing.getOrderItems().clear();
+            existing.getOrderItems().addAll(updatedItems);
+        }
+    }
+
+    /**
+     * If any OrderItem has priceAmount == null, compute from
+     * (ServicePrice × quantityInKg).
+     */
+    private void autoCalculateItemPrices(Order order) {
+        // order.getCurrencyCode() + item.getService().getId() => ServicePrice
+        for (OrderItem item : order.getOrderItems()) {
+            if (item.getPriceAmount() == null) {
+                Service svc = item.getService();
+                if (svc == null) {
+                    throw new BadRequestException("No service specified for item");
+                }
+                ServicePrice sp = servicePriceRepository.findByServiceIdAndCurrencyCode(
+                        svc.getId(), order.getCurrencyCode()
+                ).orElseThrow(() -> new BadRequestException(
+                        "No ServicePrice for service=" + svc.getId()
+                                + " and currency=" + order.getCurrencyCode()
+                ));
+
+                // item.getQuantity() => grams => kg
+                BigDecimal kg = BigDecimal.valueOf(item.getQuantity())
+                        .divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP);
+
+                BigDecimal autoPrice = sp.getPrice().multiply(kg).setScale(2, RoundingMode.HALF_UP);
+                item.setPriceAmount(autoPrice);
+            }
+        }
+    }
+
+
 }

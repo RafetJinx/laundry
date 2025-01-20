@@ -40,4 +40,9 @@ public interface OrderService {
                      Long currentUserId,
                      String currentUserRole)
             throws NotFoundException, AccessDeniedException;
+
+    OrderResponseDto advanceOrderStatus(Long orderId,
+                                        Long currentUserId,
+                                        String currentUserRole)
+            throws NotFoundException, AccessDeniedException, BadRequestException;
 }

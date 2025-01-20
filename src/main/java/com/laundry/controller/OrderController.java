@@ -85,4 +85,16 @@ public class OrderController {
         orderService.deleteOrder(id, currentUserId, currentUserRole);
         return ResponseEntity.ok(ApiResponse.success("Order deleted", null));
     }
+
+    @PatchMapping("/{id}/advance")
+    public ResponseEntity<ApiResponse<OrderResponseDto>> advanceOrderStatus(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Long currentUserId = JwtUtil.getUserIdFromAuthentication(authentication);
+        String currentUserRole = JwtUtil.getRoleFromAuthentication(authentication);
+
+        OrderResponseDto advanced = orderService.advanceOrderStatus(id, currentUserId, currentUserRole);
+        return ResponseEntity.ok(ApiResponse.success("Order status advanced", advanced));
+    }
 }

@@ -19,10 +19,6 @@ public class OrderItemRequestDto {
     Long serviceId;
 
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
-    @NotNull(
-            groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
-            message = "Price amount is required"
-    )
     @DecimalMin(
             value = "0.0",
             inclusive = false,
