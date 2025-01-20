@@ -31,7 +31,7 @@ import java.util.List;
  *   <li><strong>DELETE /api/services/{serviceId}/prices/{priceId}</strong>: Delete a ServicePrice</li>
  * </ul>
  */
-@Tag(name = "ServicePrice Management") // For OpenAPI grouping
+@Tag(name = "Service Price Management")
 @RestController
 @RequestMapping("/api/services/{serviceId}/prices")
 @Slf4j
