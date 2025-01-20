@@ -90,7 +90,6 @@ public class TcmbCurrencyService {
                 count++;
             }
 
-            // Optionally set local currency (TRY) to 1.0
             currencyToTryRate.put("TRY", 1.0);
 
             log.info("TCMB rates updated successfully. Found {} currency entries.", count);

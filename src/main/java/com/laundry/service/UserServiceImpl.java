@@ -35,7 +35,7 @@ public class UserServiceImpl implements UserService {
     private MailService mailService;
 
     @Override
-    public UserResponseDto createUser(UserRequestDto dto) throws UserAlreadyExistsException {
+    public UserResponseDto createUser(UserRequestDto dto) throws InvalidEmailException, UserAlreadyExistsException {
         if (!EmailUtil.isEmailValid(dto.getEmail())) {
             throw new InvalidEmailException("Invalid email address");
         }

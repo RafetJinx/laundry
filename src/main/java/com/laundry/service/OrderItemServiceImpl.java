@@ -166,9 +166,21 @@ public class OrderItemServiceImpl implements OrderItemService {
     }
 
     /**
-     * If price is not given manually, compute from:
-     *  (ServicePrice for order's currency) × (quantity in KG)
-     *  quantity is stored in grams. E.g. 1023 => 1.023 kg
+     * Computes the price of an {@link OrderItem} based on the item's quantity
+     * (in grams) and the {@link ServicePrice} for the corresponding service
+     * and the order's currency code.
+     * <ul>
+     *   <li>Looks up the {@link ServicePrice} by {@code serviceId} and {@code currencyCode}.</li>
+     *   <li>Converts the quantity from grams to kilograms.</li>
+     *   <li>Multiplies the per-kg service price by the item's weight (in kg).</li>
+     *   <li>Rounds the result to 2 decimal places using {@link RoundingMode#HALF_UP}.</li>
+     * </ul>
+     *
+     * @param order         the parent {@link Order} that determines the currency code
+     * @param service       the {@link Service} whose price is used
+     * @param quantityGrams the item quantity in grams
+     * @return a {@link BigDecimal} representing the computed total price
+     * @throws NotFoundException if the corresponding service price is not found
      */
     private BigDecimal computePriceFromServicePrice(Order order,
                                                     Service service,

@@ -104,11 +104,28 @@ public class ServiceServiceImpl implements ServiceService {
         serviceRepository.delete(service);
     }
 
+    /**
+     * Retrieves an existing service by its ID. If the service does not exist,
+     * throws a {@link NotFoundException}.
+     *
+     * @param id the ID of the service
+     * @return the {@link Service} entity
+     * @throws NotFoundException if the service with the specified {@code id} is not found
+     */
     private Service getExistingService(Long id) throws NotFoundException {
         return serviceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Service not found with id: " + id));
     }
 
+    /**
+     * Validates if the name of the service being updated/created conflicts
+     * with any existing service in the system. If {@code requestCapitalizedName}
+     * conflicts with a different service, a {@link BadRequestException} is thrown.
+     *
+     * @param existing   the existing {@link Service} being updated
+     * @param requestDto the data transfer object containing the new service name
+     * @throws BadRequestException if the updated service name conflicts with another existing service
+     */
     private void validateNameChange(Service existing, ServiceRequestDto requestDto)
             throws BadRequestException {
         String requestCapitalizedName = Format.capitalizeString(requestDto.getName());
@@ -121,6 +138,14 @@ public class ServiceServiceImpl implements ServiceService {
         }
     }
 
+    /**
+     * Updates the {@link Service} entity fields with values from the
+     * {@link ServiceRequestDto}. Fields that are {@code null} in the DTO
+     * will be ignored, leaving the existing entity fields unchanged.
+     *
+     * @param existing the existing {@link Service} entity to update
+     * @param dto      the {@link ServiceRequestDto} containing updated fields
+     */
     public void updateEntity(Service existing, ServiceRequestDto dto) {
         if (dto.getName() != null) {
             existing.setName(Format.capitalizeString(dto.getName().trim()));

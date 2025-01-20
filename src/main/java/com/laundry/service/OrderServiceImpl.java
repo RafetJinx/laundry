@@ -171,6 +171,7 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
+        // Record this status transition
         OrderStatusHistory orderStatusHistory = new OrderStatusHistory();
         orderStatusHistory.setOrder(order);
         orderStatusHistory.setOldStatus(currentStatus);
@@ -184,13 +185,26 @@ public class OrderServiceImpl implements OrderService {
         return OrderMapper.toResponseDto(order);
     }
 
+    /**
+     * Retrieves an existing {@link Order} entity by its unique identifier.
+     * If the order is not found, throws a {@link NotFoundException}.
+     *
+     * @param id the unique identifier of the order
+     * @return an existing {@link Order} entity
+     * @throws NotFoundException if no order with the given {@code id} exists
+     */
     private Order getExistingOrder(Long id) throws NotFoundException {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Order not found with id: " + id));
     }
 
     /**
-     * If the order has items, extract distinct serviceIds to fetch them all at once.
+     * Extracts a distinct list of service IDs from the {@code orderItems}
+     * in the provided {@link OrderRequestDto}, in order to perform batch
+     * lookups.
+     *
+     * @param requestDto the DTO containing order items
+     * @return a list of distinct service IDs, or an empty list if no items
      */
     private List<Long> extractServiceIds(OrderRequestDto requestDto) {
         if (requestDto.getOrderItems() == null) {
@@ -203,7 +217,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * For patch scenarios, we use the same logic as update.
+     * Applies partial updates from an {@link OrderRequestDto} to an
+     * existing {@link Order} entity. The logic for updating is the same as
+     * {@link #updateEntity(Order, OrderRequestDto, List, Long)}, allowing for
+     * shared code between {@code patchOrder} and {@code updateOrder}.
+     *
+     * @param existing the existing {@link Order} entity to patch
+     * @param requestDto the DTO containing partial order updates
+     * @param foundServices a list of {@link Service} entities that match the item IDs
+     * @param currentUserId the ID of the currently logged-in user
      */
     private void patchEntity(Order existing,
                              OrderRequestDto requestDto,
@@ -213,13 +235,26 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Updates an existing Order entity fields using the provided DTO
-     * (e.g., partial or full update).
+     * Updates an existing {@link Order} entity's fields (either partial or full)
+     * based on values provided in the {@link OrderRequestDto}.
+     * <ul>
+     *   <li>Updates the currency code if provided.</li>
+     *   <li>Updates the payment status if provided and logs the change in
+     *       {@link OrderPaymentStatusHistory}.</li>
+     *   <li>Updates the order status if provided.</li>
+     *   <li>Replaces the existing order items if a new list is provided.</li>
+     * </ul>
+     *
+     * @param existing the existing {@link Order} entity to update
+     * @param requestDto the DTO containing new order values
+     * @param foundServices the list of {@link Service} entities matched by ID
+     * @param currentUserId the ID of the currently logged-in user
+     * @throws BadRequestException if the payment status or item service references are invalid
      */
-    public void updateEntity(Order existing,
-                             OrderRequestDto requestDto,
-                             List<Service> foundServices,
-                             Long currentUserId) {
+    private void updateEntity(Order existing,
+                              OrderRequestDto requestDto,
+                              List<Service> foundServices,
+                              Long currentUserId) {
         if (requestDto.getCurrencyCode() != null) {
             existing.setCurrencyCode(requestDto.getCurrencyCode());
         }
@@ -248,33 +283,46 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * If any OrderItem has priceAmount == null, compute from
-     * (ServicePrice × quantityInKg).
+     * Automatically calculates prices for any {@link OrderItem} that does not
+     * have a {@code priceAmount} set. The calculation is based on:
+     * <ul>
+     *   <li>The matching {@link ServicePrice} (identified by the item's service ID and the order's currency).</li>
+     *   <li>The item's quantity (converted from grams to kilograms).</li>
+     *   <li>Multiplies {@code price} by the item's weight in kilograms.</li>
+     * </ul>
+     *
+     * @param order the {@link Order} entity containing items to be updated
+     * @throws BadRequestException if a service or corresponding service price is missing
      */
     private void autoCalculateItemPrices(Order order) {
-        // order.getCurrencyCode() + item.getService().getId() => ServicePrice
         for (OrderItem item : order.getOrderItems()) {
+            // If price is already set, skip
             if (item.getPriceAmount() == null) {
                 Service svc = item.getService();
                 if (svc == null) {
                     throw new BadRequestException("No service specified for item");
                 }
-                ServicePrice sp = servicePriceRepository.findByServiceIdAndCurrencyCode(
-                        svc.getId(), order.getCurrencyCode()
-                ).orElseThrow(() -> new BadRequestException(
-                        "No ServicePrice for service=" + svc.getId()
-                                + " and currency=" + order.getCurrencyCode()
-                ));
 
-                // item.getQuantity() => grams => kg
+                // Retrieve the matching service price record
+                ServicePrice sp = servicePriceRepository
+                        .findByServiceIdAndCurrencyCode(svc.getId(), order.getCurrencyCode())
+                        .orElseThrow(() -> new BadRequestException(
+                                "No ServicePrice for service=" + svc.getId()
+                                        + " and currency=" + order.getCurrencyCode()
+                        ));
+
+                // Convert grams to kilograms
                 BigDecimal kg = BigDecimal.valueOf(item.getQuantity())
                         .divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP);
 
-                BigDecimal autoPrice = sp.getPrice().multiply(kg).setScale(2, RoundingMode.HALF_UP);
+                // Multiply service price by item weight
+                BigDecimal autoPrice = sp.getPrice()
+                        .multiply(kg)
+                        .setScale(2, RoundingMode.HALF_UP);
+
                 item.setPriceAmount(autoPrice);
             }
         }
     }
-
 
 }
