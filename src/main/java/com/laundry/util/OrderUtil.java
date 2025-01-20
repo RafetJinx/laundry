@@ -95,8 +95,17 @@ public class OrderUtil {
     }
 
     /**
-     * Computes the total amount by summing the priceAmount field of each item.
-     * If you also have a 'quantity' in OrderItem, multiply accordingly.
+     * Computes the total cost of all provided {@link OrderItem} objects.
+     * <p>
+     * The total is calculated by summing up the product of:
+     * <ul>
+     *   <li>each item's {@code priceAmount} (as a {@link BigDecimal})</li>
+     *   <li>each item's quantity (converted from grams to kilograms by dividing by 1000.0)</li>
+     * </ul>
+     * The result is then scaled to 2 decimal places using {@link RoundingMode#HALF_UP}.
+     *
+     * @param orderItems the list of {@link OrderItem} entities whose total cost is to be computed.
+     * @return the total cost of the given items, or {@link BigDecimal#ZERO} if the list is null or empty.
      */
     public static BigDecimal computeOrderItemsTotal(List<OrderItem> orderItems) {
         if (orderItems == null || orderItems.isEmpty()) {
@@ -104,8 +113,6 @@ public class OrderUtil {
         }
         double sum = 0.0;
         for (OrderItem item : orderItems) {
-            // If your OrderItem has 'quantity',
-            // do => sum += item.getPriceAmount().doubleValue() * item.getQuantity();
             sum += item.getPriceAmount().doubleValue() * (item.getQuantity() / 1000.0);
         }
         return BigDecimal.valueOf(sum).setScale(2, RoundingMode.HALF_UP);

@@ -19,18 +19,6 @@ public class OrderRequestDto {
     )
     Long userId;
 
-//    @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
-//    @NotNull(
-//            groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
-//            message = "Total amount is required"
-//    )
-//    @DecimalMin(
-//            value = "0.0",
-//            inclusive = false,
-//            message = "Total amount must be greater than 0"
-//    )
-//    BigDecimal totalAmount;
-
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @NotNull(
             groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
