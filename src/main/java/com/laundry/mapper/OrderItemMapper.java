@@ -6,21 +6,22 @@ import com.laundry.entity.Order;
 import com.laundry.entity.OrderItem;
 import com.laundry.entity.Service;
 
-import static com.laundry.mapper.DateTimeUtil.formatLocalDateTime;
+import static com.laundry.util.DateTimeUtil.formatLocalDateTime;
 
 public class OrderItemMapper {
 
-    public static OrderItem toEntity(OrderItemRequestDto requestDto,
+    public static OrderItem toEntity(OrderItemRequestDto dto,
                                      Order order,
                                      Service service) {
-        if (requestDto == null) {
+        if (dto == null) {
             return null;
         }
+
         OrderItem item = new OrderItem();
         item.setOrder(order);
         item.setService(service);
-        item.setPriceAmount(requestDto.getPriceAmount());
-        item.setQuantity(requestDto.getQuantity());
+        item.setPriceAmount(dto.getPriceAmount());
+        item.setQuantity(dto.getQuantity());
         return item;
     }
 
@@ -28,6 +29,7 @@ public class OrderItemMapper {
         if (entity == null) {
             return null;
         }
+
         return OrderItemResponseDto.builder()
                 .id(entity.getId())
                 .orderId(entity.getOrder() != null ? entity.getOrder().getId() : null)

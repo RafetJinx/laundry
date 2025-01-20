@@ -18,6 +18,10 @@ public class ServiceMapper {
     }
 
     public static ServiceResponseDto toResponseDto(Service entity) {
+        if (entity == null) {
+            return null;
+        }
+
         return ServiceResponseDto.builder()
                 .id(entity.getId())
                 .name(entity.getName())

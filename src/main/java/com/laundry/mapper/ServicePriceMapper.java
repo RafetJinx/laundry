@@ -11,6 +11,8 @@ import java.time.ZoneOffset;
 public class ServicePriceMapper {
 
     public static ServicePrice toEntity(ServicePriceRequestDto dto, Service service) {
+        if (dto == null) return null;
+
         ServicePrice entity = new ServicePrice();
         entity.setService(service);
         entity.setPrice(dto.getPrice());
@@ -19,6 +21,8 @@ public class ServicePriceMapper {
     }
 
     public static ServicePriceResponseDto toDto(ServicePrice entity) {
+        if (entity == null) return null;
+
         return ServicePriceResponseDto.builder()
                 .id(entity.getId())
                 .price(entity.getPrice())

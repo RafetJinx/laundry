@@ -5,18 +5,18 @@ import com.laundry.entity.OrderPaymentStatusHistory;
 
 public class OrderPSHistoryMapper {
 
-    public static OrderPSHistoryResponseDto toDto(OrderPaymentStatusHistory history) {
-        if (history == null) {
+    public static OrderPSHistoryResponseDto toDto(OrderPaymentStatusHistory entity) {
+        if (entity == null) {
             return null;
         }
 
         return OrderPSHistoryResponseDto.builder()
-                .id(history.getId())
-                .orderId(history.getOrder().getId())
-                .oldPaymentStatus(history.getOldPaymentStatus())
-                .newPaymentStatus(history.getNewPaymentStatus())
-                .changedAt(history.getChangedAt())
-                .changedBy(history.getChangedBy() != null ? history.getChangedBy() : null)
+                .id(entity.getId())
+                .orderId(entity.getOrder().getId())
+                .oldPaymentStatus(entity.getOldPaymentStatus())
+                .newPaymentStatus(entity.getNewPaymentStatus())
+                .changedAt(entity.getChangedAt())
+                .changedBy(entity.getChangedBy() != null ? entity.getChangedBy() : null)
                 .build();
     }
 }

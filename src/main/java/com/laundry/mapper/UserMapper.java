@@ -4,41 +4,41 @@ import com.laundry.dto.UserRequestDto;
 import com.laundry.dto.UserResponseDto;
 import com.laundry.entity.User;
 
-import static com.laundry.mapper.DateTimeUtil.formatLocalDateTime;
+import static com.laundry.util.DateTimeUtil.formatLocalDateTime;
 
 public class UserMapper {
 
-    public static User toEntity(UserRequestDto requestDto) {
-        if (requestDto == null) {
+    public static User toEntity(UserRequestDto dto) {
+        if (dto == null) {
             return null;
         }
 
         User user = new User();
-        user.setUsername(requestDto.getUsername());
-        user.setDisplayName(requestDto.getDisplayName());
-        user.setPassword(requestDto.getPassword());
-        user.setEmail(requestDto.getEmail());
-        user.setPhone(requestDto.getPhone());
-        user.setAddress(requestDto.getAddress());
-        user.setRole(requestDto.getRole());
+        user.setUsername(dto.getUsername());
+        user.setDisplayName(dto.getDisplayName());
+        user.setPassword(dto.getPassword());
+        user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
+        user.setAddress(dto.getAddress());
+        user.setRole(dto.getRole());
         return user;
     }
 
-    public static UserResponseDto toResponseDto(User user) {
-        if (user == null) {
+    public static UserResponseDto toResponseDto(User entity) {
+        if (entity == null) {
             return null;
         }
 
         return UserResponseDto.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .displayName(user.getDisplayName())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .address(user.getAddress())
-                .role(user.getRole())
-                .createdAt(formatLocalDateTime(user.getCreatedAt()))
-                .updatedAt(formatLocalDateTime(user.getUpdatedAt()))
+                .id(entity.getId())
+                .username(entity.getUsername())
+                .displayName(entity.getDisplayName())
+                .email(entity.getEmail())
+                .phone(entity.getPhone())
+                .address(entity.getAddress())
+                .role(entity.getRole())
+                .createdAt(formatLocalDateTime(entity.getCreatedAt()))
+                .updatedAt(formatLocalDateTime(entity.getUpdatedAt()))
                 .build();
     }
 }

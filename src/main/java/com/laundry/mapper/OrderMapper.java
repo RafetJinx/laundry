@@ -6,63 +6,53 @@ import com.laundry.util.OrderUtil;
 
 import java.util.List;
 
-import static com.laundry.mapper.DateTimeUtil.formatLocalDateTime;
+import static com.laundry.util.DateTimeUtil.formatLocalDateTime;
 
 public class OrderMapper {
 
-    /**
-     * Builds an Order entity from the given OrderRequestDto, user entity,
-     * and a list of found services. Automatically sets defaults for PaymentStatus
-     * and OrderStatus if not provided, and throws BadRequestException if
-     * an invalid enum string is given.
-     */
-    public static Order toEntity(OrderRequestDto requestDto,
+    public static Order toEntity(OrderRequestDto dto,
                                  User user,
                                  List<Service> foundServices) {
-        if (requestDto == null) return null;
+        if (dto == null) return null;
 
         Order order = new Order();
         order.setUser(user);
-        order.setCurrencyCode(requestDto.getCurrencyCode());
-        order.setPaymentStatus(OrderUtil.parsePaymentStatus(requestDto.getPaymentStatus()));
-        order.setStatus(OrderUtil.parseOrderStatus(requestDto.getOrderStatus()));
+        order.setCurrencyCode(dto.getCurrencyCode());
+        order.setPaymentStatus(OrderUtil.parsePaymentStatus(dto.getPaymentStatus()));
+        order.setStatus(OrderUtil.parseOrderStatus(dto.getOrderStatus()));
 
-        if (requestDto.getOrderItems() != null && !requestDto.getOrderItems().isEmpty()) {
-            List<OrderItem> items = OrderUtil.buildOrderItems(order, requestDto, foundServices);
+        if (dto.getOrderItems() != null && !dto.getOrderItems().isEmpty()) {
+            List<OrderItem> items = OrderUtil.buildOrderItems(order, dto, foundServices);
             order.setOrderItems(items);
         }
         return order;
     }
 
-    /**
-     * Converts an Order entity to an OrderResponseDto.
-     */
-    public static OrderResponseDto toResponseDto(Order order) {
-        if (order == null) {
+    public static OrderResponseDto toResponseDto(Order entity) {
+        if (entity == null) {
             return null;
         }
 
         List<OrderItemResponseDto> itemDtos = null;
-        if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
-            itemDtos = order.getOrderItems().stream()
+        if (entity.getOrderItems() != null && !entity.getOrderItems().isEmpty()) {
+            itemDtos = entity.getOrderItems().stream()
                     .map(OrderItemMapper::toResponseDto)
                     .toList();
         }
 
         return OrderResponseDto.builder()
-                .id(order.getId())
-                .userId(order.getUser() != null ? order.getUser().getId() : null)
-                .totalAmount(order.getTotalAmount())
-                .currencyCode(order.getCurrencyCode())
-                // Return enums as String or you can store them as enums in DTO as well.
-                .paymentStatus(order.getPaymentStatus() != null
-                        ? order.getPaymentStatus().name()
+                .id(entity.getId())
+                .userId(entity.getUser() != null ? entity.getUser().getId() : null)
+                .totalAmount(entity.getTotalAmount())
+                .currencyCode(entity.getCurrencyCode())
+                .paymentStatus(entity.getPaymentStatus() != null
+                        ? entity.getPaymentStatus().name()
                         : null)
-                .orderStatus(order.getStatus() != null
-                        ? order.getStatus().name()
+                .orderStatus(entity.getStatus() != null
+                        ? entity.getStatus().name()
                         : null)
-                .createdAt(formatLocalDateTime(order.getCreatedAt()))
-                .updatedAt(formatLocalDateTime(order.getUpdatedAt()))
+                .createdAt(formatLocalDateTime(entity.getCreatedAt()))
+                .updatedAt(formatLocalDateTime(entity.getUpdatedAt()))
                 .orderItems(itemDtos)
                 .build();
     }
