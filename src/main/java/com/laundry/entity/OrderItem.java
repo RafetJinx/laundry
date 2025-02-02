@@ -2,6 +2,7 @@ package com.laundry.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 
 @Entity
@@ -29,4 +30,7 @@ public class OrderItem extends AuditableBaseEntity {
 
     @Column(nullable = false)
     private Integer quantity;
+
+    @Column(name = "weight", nullable = false)
+    private BigDecimal weight;
 }

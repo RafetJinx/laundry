@@ -11,6 +11,8 @@ import java.util.List;
 public class OrderResponseDto {
     Long id;
     Long userId;
+    Long productId;
+    String referenceNo;
     BigDecimal totalAmount;
     String currencyCode;
     String paymentStatus;

@@ -1,6 +1,8 @@
 package com.laundry.mapper;
 
-import com.laundry.dto.*;
+import com.laundry.dto.OrderItemResponseDto;
+import com.laundry.dto.OrderRequestDto;
+import com.laundry.dto.OrderResponseDto;
 import com.laundry.entity.*;
 import com.laundry.util.OrderUtil;
 
@@ -10,13 +12,12 @@ import static com.laundry.util.DateTimeUtil.formatLocalDateTime;
 
 public class OrderMapper {
 
-    public static Order toEntity(OrderRequestDto dto,
-                                 User user,
-                                 List<Service> foundServices) {
+    public static Order toEntity(OrderRequestDto dto, User user, Product product, List<Service> foundServices) {
         if (dto == null) return null;
 
         Order order = new Order();
         order.setUser(user);
+        order.setProduct(product);
         order.setCurrencyCode(dto.getCurrencyCode());
         order.setPaymentStatus(OrderUtil.parsePaymentStatus(dto.getPaymentStatus()));
         order.setStatus(OrderUtil.parseOrderStatus(dto.getOrderStatus()));
@@ -25,6 +26,7 @@ public class OrderMapper {
             List<OrderItem> items = OrderUtil.buildOrderItems(order, dto, foundServices);
             order.setOrderItems(items);
         }
+
         return order;
     }
 
@@ -43,6 +45,8 @@ public class OrderMapper {
         return OrderResponseDto.builder()
                 .id(entity.getId())
                 .userId(entity.getUser() != null ? entity.getUser().getId() : null)
+                .productId(entity.getProduct() != null ? entity.getProduct().getId() : null)
+                .referenceNo(entity.getReferenceNo())
                 .totalAmount(entity.getTotalAmount())
                 .currencyCode(entity.getCurrencyCode())
                 .paymentStatus(entity.getPaymentStatus() != null

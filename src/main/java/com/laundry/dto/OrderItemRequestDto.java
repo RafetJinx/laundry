@@ -36,4 +36,16 @@ public class OrderItemRequestDto {
             message = "Quantity must be at least 1"
     )
     Integer quantity;
+
+    @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
+    @NotNull(
+            groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
+            message = "Weight is required"
+    )
+    @DecimalMin(
+            value = "0.0",
+            inclusive = false,
+            message = "Weight must be greater than 0"
+    )
+    BigDecimal weight;
 }

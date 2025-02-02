@@ -20,14 +20,10 @@ public class OrderRequestDto {
     Long userId;
 
     @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
-    @NotNull(
-            groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
-            message = "Currency code is required"
-    )
-    @NotBlank(
-            groups = {ValidationGroups.Create.class, ValidationGroups.Update.class},
-            message = "Currency code cannot be blank"
-    )
+    @NotNull(message = "Product ID is required")
+    Long productId;
+
+    @JsonView({Views.Create.class, Views.Update.class, Views.Patch.class})
     @Size(
             min = 3,
             max = 3,

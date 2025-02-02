@@ -23,6 +23,13 @@ public class Order extends AuditableBaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @Column(name = "reference_no", length = 255)
+    private String referenceNo;
+
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 

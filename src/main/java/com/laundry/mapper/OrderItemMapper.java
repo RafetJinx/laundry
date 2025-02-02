@@ -22,6 +22,7 @@ public class OrderItemMapper {
         item.setService(service);
         item.setPriceAmount(dto.getPriceAmount());
         item.setQuantity(dto.getQuantity());
+        item.setWeight(dto.getWeight());
         return item;
     }
 
@@ -36,6 +37,7 @@ public class OrderItemMapper {
                 .serviceId(entity.getService() != null ? entity.getService().getId() : null)
                 .priceAmount(entity.getPriceAmount())
                 .quantity(entity.getQuantity())
+                .weight(entity.getWeight())
                 .createdAt(formatLocalDateTime(entity.getCreatedAt()))
                 .updatedAt(formatLocalDateTime(entity.getUpdatedAt()))
                 .build();

@@ -2,6 +2,7 @@ package com.laundry.dto;
 
 import lombok.Builder;
 import lombok.Value;
+
 import java.math.BigDecimal;
 
 @Value
@@ -12,6 +13,7 @@ public class OrderItemResponseDto {
     Long serviceId;
     BigDecimal priceAmount;
     Integer quantity;
+    BigDecimal weight;
     String createdAt;
     String updatedAt;
 }
