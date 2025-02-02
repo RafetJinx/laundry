@@ -1,4 +1,4 @@
-package com.laundry.service;
+package com.laundry.service.impl;
 
 import com.laundry.dto.OrderItemRequestDto;
 import com.laundry.dto.OrderRequestDto;
@@ -10,10 +10,16 @@ import com.laundry.exception.NotFoundException;
 import com.laundry.helper.RoleGuard;
 import com.laundry.mapper.OrderMapper;
 import com.laundry.repository.*;
+import com.laundry.service.OrderService;
 import com.laundry.util.OrderUtil;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
+import com.laundry.specification.OrderSpecification;
 
+import java.awt.print.PrinterException;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -25,27 +31,45 @@ import java.util.stream.Collectors;
 @Transactional
 public class OrderServiceImpl implements OrderService {
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private ServiceRepository serviceRepository;
+    private final ServiceRepository serviceRepository;
 
-    @Autowired
-    private ServicePriceRepository servicePriceRepository;
-    @Autowired
-    private OrderSHistoryRepository orderSHistoryRepository;
-    @Autowired
-    private OrderPSHistoryRepository orderPSHistoryRepository;
+    private final ServicePriceRepository servicePriceRepository;
+
+    private final OrderSHistoryRepository orderSHistoryRepository;
+
+    private final ProductRepository productRepository;
+
+    private final OrderPSHistoryRepository orderPSHistoryRepository;
+
+    private final QrCodePrintingService qrCodePrintingService;
+
+    public OrderServiceImpl(OrderRepository orderRepository,
+                            UserRepository userRepository,
+                            ServiceRepository serviceRepository,
+                            ServicePriceRepository servicePriceRepository,
+                            OrderSHistoryRepository orderSHistoryRepository,
+                            ProductRepository productRepository,
+                            OrderPSHistoryRepository orderPSHistoryRepository,
+                            QrCodePrintingService qrCodePrintingService) {
+        this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
+        this.serviceRepository = serviceRepository;
+        this.servicePriceRepository = servicePriceRepository;
+        this.orderSHistoryRepository = orderSHistoryRepository;
+        this.productRepository = productRepository;
+        this.orderPSHistoryRepository = orderPSHistoryRepository;
+        this.qrCodePrintingService = qrCodePrintingService;
+    }
 
     @Override
     public OrderResponseDto createOrder(OrderRequestDto requestDto,
                                         Long currentUserId,
                                         String currentUserRole)
-            throws NotFoundException, AccessDeniedException, BadRequestException {
+            throws Exception {
 
         User user = userRepository.findById(requestDto.getUserId())
                 .orElseThrow(() -> new NotFoundException("User not found: " + requestDto.getUserId()));
@@ -54,11 +78,61 @@ public class OrderServiceImpl implements OrderService {
 
         List<Service> foundServices = serviceRepository.findAllById(extractServiceIds(requestDto));
 
-        Order order = OrderMapper.toEntity(requestDto, user, foundServices);
+        Product product = productRepository.findById(requestDto.getProductId())
+                .orElseThrow(() -> new NotFoundException("Product not found: " + requestDto.getProductId()));
+
+        Order order = OrderMapper.toEntity(requestDto, user, product, foundServices);
+
+        if (order.getStatus() == null) {
+            order.setStatus(OrderStatus.PENDING);
+        }
+        if (order.getPaymentStatus() == null) {
+            order.setPaymentStatus(PaymentStatus.PENDING);
+        }
+        if (order.getCurrencyCode() == null || order.getCurrencyCode().trim().isBlank()) {
+            order.setCurrencyCode("TRY");
+        }
+
         autoCalculateItemPrices(order);
         order.setTotalAmount(OrderUtil.computeOrderItemsTotal(order.getOrderItems()));
 
+        LocalDateTime createdDate = LocalDateTime.now();
+        int year = createdDate.getYear() % 100;
+        String month = String.format("%02d", createdDate.getMonthValue());
+        String day = String.format("%02d", createdDate.getDayOfMonth());
+
+        LocalDateTime orderDate = createdDate.toLocalDate().atStartOfDay();
+        LocalDateTime startOfDay = orderDate.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = orderDate.plusDays(1).toLocalDate().atStartOfDay();
+
+        long dailyOrderCount = orderRepository.countByCreatedAtBetween(startOfDay, endOfDay);
+        String sequence = String.format("%05d", dailyOrderCount + 1);
+        String referenceNumber = String.format("%02d%s%s%s", year, month, day, sequence);
+
+
+        order.setReferenceNo(referenceNumber);
         orderRepository.save(order);
+
+        try {
+            String displayName = user.getDisplayName();
+            String serviceType = buildServiceTypeString(order);
+            String weight = getTotalWeightAsString(order);
+            int quantity = getTotalItemCount(order);
+
+            qrCodePrintingService.printReceipt(
+                    referenceNumber,
+                    displayName,
+                    order.getProduct().getName(),
+                    serviceType,
+                    weight,
+                    quantity,
+                    order.getCreatedAt().toString()
+            );
+        } catch (PrinterException | IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            throw new Exception(e);
+        }
 
         return OrderMapper.toResponseDto(order);
     }
@@ -183,6 +257,67 @@ public class OrderServiceImpl implements OrderService {
         orderSHistoryRepository.save(orderStatusHistory);
 
         return OrderMapper.toResponseDto(order);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDto> searchOrders(Long userId,
+                                               OrderStatus status,
+                                               LocalDateTime startDate,
+                                               LocalDateTime endDate,
+                                               BigDecimal minAmount,
+                                               BigDecimal maxAmount,
+                                               String keyword,
+                                               Pageable pageable) {
+
+        Specification<Order> spec = Specification.where(null);
+
+        if (userId != null) {
+            spec = spec.and(com.laundry.specification.OrderSpecification.hasUserId(userId));
+        }
+        if (status != null) {
+            spec = spec.and(OrderSpecification.hasStatus(status));
+        }
+        if (startDate != null && endDate != null) {
+            spec = spec.and(OrderSpecification.createdBetween(startDate, endDate));
+        }
+        if (minAmount != null && maxAmount != null) {
+            spec = spec.and(OrderSpecification.totalAmountBetween(minAmount, maxAmount));
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(OrderSpecification.referenceNoContains(keyword));
+        }
+        Page<Order> orders = orderRepository.findAll(spec, pageable);
+        return orders.map(OrderMapper::toResponseDto);
+    }
+
+    @Override
+    public void printOrder(Long orderId, Long currentUserId, String currentUserRole) throws Exception {
+        RoleGuard.requireAdminRole(currentUserRole, "You do not have permission to print this order");
+
+        Order order = getExistingOrder(orderId);
+
+        String displayName = order.getUser().getDisplayName();
+        String productType = order.getProduct().getName();
+        String servicesString = buildServiceTypeString(order);
+        String weight = getTotalWeightAsString(order);
+        int quantity = getTotalItemCount(order);
+        String orderDate = order.getCreatedAt().toString();
+
+        try {
+            qrCodePrintingService.printReceipt(
+                    order.getReferenceNo(),
+                    displayName,
+                    productType,
+                    servicesString,
+                    weight,
+                    quantity,
+                    orderDate
+            );
+        } catch (Exception e) {
+            throw new Exception("Error printing order: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -323,6 +458,26 @@ public class OrderServiceImpl implements OrderService {
                 item.setPriceAmount(autoPrice);
             }
         }
+    }
+
+    private String buildServiceTypeString(Order order) {
+        return order.getOrderItems().stream()
+                .map(item -> item.getService().getName())
+                .distinct()
+                .collect(Collectors.joining(", "));
+    }
+
+    private String getTotalWeightAsString(Order order) {
+        BigDecimal total = order.getOrderItems().stream()
+                .map(OrderItem::getWeight)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return total.toPlainString();
+    }
+
+    private int getTotalItemCount(Order order) {
+        return order.getOrderItems().stream()
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
     }
 
 }

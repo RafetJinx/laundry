@@ -4,6 +4,8 @@ import com.laundry.dto.UserResponseDto;
 import com.laundry.entity.User;
 import com.laundry.exception.AccessDeniedException;
 import com.laundry.exception.NotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -38,4 +40,6 @@ public interface AdminUserService {
      * @throws AccessDeniedException if the requested {@code newRole} is not valid
      */
     UserResponseDto updateUserRole(Long id, String newRole) throws NotFoundException;
+
+    Page<UserResponseDto> getAllUsersByRole(String role, Pageable pageable);
 }
