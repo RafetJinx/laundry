@@ -1,6 +1,6 @@
 package com.laundry.scheduler;
 
-import com.laundry.service.TcmbCurrencyService;
+import com.laundry.service.impl.TcmbCurrencyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
