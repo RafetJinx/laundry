@@ -1,4 +1,4 @@
-package com.laundry.service;
+package com.laundry.service.impl;
 
 import com.laundry.dto.ServiceRequestDto;
 import com.laundry.dto.ServiceResponseDto;
@@ -9,8 +9,8 @@ import com.laundry.exception.NotFoundException;
 import com.laundry.helper.RoleGuard;
 import com.laundry.mapper.ServiceMapper;
 import com.laundry.repository.ServiceRepository;
+import com.laundry.service.ServiceService;
 import com.laundry.util.Format;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -20,8 +20,11 @@ import java.util.stream.Collectors;
 @Transactional
 public class ServiceServiceImpl implements ServiceService {
 
-    @Autowired
-    private ServiceRepository serviceRepository;
+    private final ServiceRepository serviceRepository;
+
+    public ServiceServiceImpl(ServiceRepository serviceRepository) {
+        this.serviceRepository = serviceRepository;
+    }
 
     @Override
     public ServiceResponseDto createService(ServiceRequestDto requestDto,

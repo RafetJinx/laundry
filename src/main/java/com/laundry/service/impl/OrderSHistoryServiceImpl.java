@@ -1,11 +1,11 @@
-package com.laundry.service;
+package com.laundry.service.impl;
 
 import com.laundry.dto.OrderSHistoryResponseDto;
 import com.laundry.entity.OrderStatus;
 import com.laundry.exception.NotFoundException;
 import com.laundry.mapper.OrderSHistoryMapper;
 import com.laundry.repository.OrderSHistoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.laundry.service.OrderSHistoryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,8 +16,11 @@ import java.time.LocalDateTime;
 @Service
 public class OrderSHistoryServiceImpl implements OrderSHistoryService {
 
-    @Autowired
-    private OrderSHistoryRepository orderSHistoryRepository;
+    private final OrderSHistoryRepository orderSHistoryRepository;
+
+    public OrderSHistoryServiceImpl(OrderSHistoryRepository orderSHistoryRepository) {
+        this.orderSHistoryRepository = orderSHistoryRepository;
+    }
 
     @Override
     public OrderSHistoryResponseDto findById(Long id) {

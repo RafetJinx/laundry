@@ -1,11 +1,11 @@
-package com.laundry.service;
+package com.laundry.service.impl;
 
 import com.laundry.dto.OrderPSHistoryResponseDto;
 import com.laundry.entity.PaymentStatus;
 import com.laundry.exception.NotFoundException;
 import com.laundry.mapper.OrderPSHistoryMapper;
 import com.laundry.repository.OrderPSHistoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.laundry.service.OrderPSHistoryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,8 +16,11 @@ import java.time.LocalDateTime;
 @Service
 public class OrderPSHistoryServiceImpl implements OrderPSHistoryService {
 
-    @Autowired
-    private OrderPSHistoryRepository orderPSHistoryRepository;
+    private final OrderPSHistoryRepository orderPSHistoryRepository;
+
+    public OrderPSHistoryServiceImpl(OrderPSHistoryRepository orderPSHistoryRepository) {
+        this.orderPSHistoryRepository = orderPSHistoryRepository;
+    }
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")

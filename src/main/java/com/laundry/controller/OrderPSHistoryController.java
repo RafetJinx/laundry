@@ -4,7 +4,6 @@ import com.laundry.dto.ApiResponse;
 import com.laundry.dto.OrderPSHistoryResponseDto;
 import com.laundry.entity.PaymentStatus;
 import com.laundry.service.OrderPSHistoryService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -14,11 +13,14 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/api/admin/orders/payment-status-history")
-public class AdminOrderPSHistoryController {
+@RequestMapping("/api/orders/payment-status-history")
+public class OrderPSHistoryController {
 
-    @Autowired
-    private OrderPSHistoryService orderPSHistoryService;
+    private final OrderPSHistoryService orderPSHistoryService;
+
+    public OrderPSHistoryController(OrderPSHistoryService orderPSHistoryService) {
+        this.orderPSHistoryService = orderPSHistoryService;
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<OrderPSHistoryResponseDto>> getOrderPSHistoryById(@PathVariable Long id) {

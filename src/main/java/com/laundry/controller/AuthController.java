@@ -7,7 +7,6 @@ import com.laundry.security.LaundryUserDetailsService;
 import com.laundry.service.UserService;
 import com.laundry.util.EmailUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,36 +21,30 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class AuthController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
 
-    @Autowired
-    private LaundryUserDetailsService userDetailsService;
+    private final LaundryUserDetailsService userDetailsService;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+
+    public AuthController(UserService userService,
+                          JwtUtil jwtUtil,
+                          LaundryUserDetailsService userDetailsService,
+                          AuthenticationManager authenticationManager) {
+        this.userService = userService;
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
+        this.authenticationManager = authenticationManager;
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponseDto>> registerUser(
             @Validated @RequestBody UserRequestDto requestDto,
             Authentication authentication
     ) {
-        boolean isLoggedIn = authentication != null && authentication.isAuthenticated();
-        boolean isAdmin = isLoggedIn && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        if (isLoggedIn && !isAdmin) {
-            throw new AccessDeniedException("You must logout before creating a new user");
-        }
-        String desiredRole = requestDto.getRole() == null ? "USER" : requestDto.getRole().toUpperCase();
-        if (isAdmin) {
-            if (!desiredRole.equals("USER") && !desiredRole.equals("ADMIN")) {
-                throw new BadRequestException("Admin can only set USER or ADMIN");
-            }
-        } else {
-            desiredRole = "USER";
-        }
+        var desiredRole = getString(requestDto, authentication);
         if (!EmailUtil.isEmailValid(requestDto.getEmail())) {
             throw new InvalidEmailException("Invalid email address");
         }
@@ -66,6 +59,23 @@ public class AuthController {
                 .build();
         UserResponseDto createdUser = userService.createUser(safeDto);
         return ResponseEntity.ok(ApiResponse.success("User registered successfully", createdUser));
+    }
+
+    private static String getString(UserRequestDto requestDto, Authentication authentication) {
+        boolean isLoggedIn = authentication != null && authentication.isAuthenticated();
+        boolean isAdmin = isLoggedIn && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        if (isLoggedIn && !isAdmin) {
+            throw new AccessDeniedException("You must logout before creating a new user");
+        }
+        String desiredRole = requestDto.getRole() == null ? "USER" : requestDto.getRole().toUpperCase();
+        if (isAdmin) {
+            if (!desiredRole.equals("USER") && !desiredRole.equals("ADMIN")) {
+                throw new BadRequestException("Admin can only set USER or ADMIN");
+            }
+        } else {
+            desiredRole = "USER";
+        }
+        return desiredRole;
     }
 
     @PostMapping("/login")
@@ -107,7 +117,7 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<?>> forgotPassword(@RequestParam("email") String email) {
         userService.initiatePasswordReset(email);
-        return ResponseEntity.ok(ApiResponse.success("Password reset link sent to your email", null));
+        return ResponseEntity.ok(ApiResponse.success("If the email is registered, a password reset link has been sent", null));
     }
 
     @PostMapping("/reset-password")

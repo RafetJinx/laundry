@@ -1,4 +1,4 @@
-package com.laundry.service;
+package com.laundry.service.impl;
 
 import com.laundry.dto.OrderItemRequestDto;
 import com.laundry.dto.OrderItemResponseDto;
@@ -9,10 +9,9 @@ import com.laundry.exception.NotFoundException;
 import com.laundry.helper.RoleGuard;
 import com.laundry.mapper.OrderItemMapper;
 import com.laundry.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.laundry.service.OrderItemService;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.management.relation.Role;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -22,17 +21,23 @@ import java.util.stream.Collectors;
 @Transactional
 public class OrderItemServiceImpl implements OrderItemService {
 
-    @Autowired
-    private OrderItemRepository orderItemRepository;
+    private final OrderItemRepository orderItemRepository;
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
-    @Autowired
-    private ServiceRepository serviceRepository;
+    private final ServiceRepository serviceRepository;
 
-    @Autowired
-    private ServicePriceRepository servicePriceRepository;
+    private final ServicePriceRepository servicePriceRepository;
+
+    public OrderItemServiceImpl(OrderItemRepository orderItemRepository,
+                                OrderRepository orderRepository,
+                                ServiceRepository serviceRepository,
+                                ServicePriceRepository servicePriceRepository) {
+        this.orderItemRepository = orderItemRepository;
+        this.orderRepository = orderRepository;
+        this.serviceRepository = serviceRepository;
+        this.servicePriceRepository = servicePriceRepository;
+    }
 
     /**
      * Create a new order item under the specified order.
@@ -59,7 +64,7 @@ public class OrderItemServiceImpl implements OrderItemService {
 
         // If priceAmount is null, compute from ServicePrice × weight
         if (requestDto.getPriceAmount() == null) {
-            BigDecimal computedPrice = computePriceFromServicePrice(order, service, requestDto.getQuantity());
+            BigDecimal computedPrice = computePriceFromServicePrice(order, service, requestDto.getWeight());
             item.setPriceAmount(computedPrice);
         }
 
@@ -77,8 +82,6 @@ public class OrderItemServiceImpl implements OrderItemService {
         OrderItem existing = orderItemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("OrderItem not found: " + itemId));
 
-        Order parentOrder = existing.getOrder();
-
         RoleGuard.requireAdminRole("You do not have permission to update order item", currentUserRole);
 
         // Possibly user wants to change service, quantity, or price
@@ -94,15 +97,20 @@ public class OrderItemServiceImpl implements OrderItemService {
             existing.setQuantity(requestDto.getQuantity());
         }
 
-        // If user gave a priceAmount, we treat it as final
-        // If null, we compute from ServicePrice
+        if (requestDto.getWeight() != null) {
+            existing.setWeight(requestDto.getWeight());
+        }
+
+        // Price
         if (requestDto.getPriceAmount() != null) {
+            // user provided a price
             existing.setPriceAmount(requestDto.getPriceAmount());
         } else {
+            // compute again from weight
             BigDecimal computed = computePriceFromServicePrice(
-                    parentOrder,
+                    existing.getOrder(),
                     existing.getService(),
-                    existing.getQuantity()
+                    existing.getWeight()
             );
             existing.setPriceAmount(computed);
         }
@@ -159,7 +167,6 @@ public class OrderItemServiceImpl implements OrderItemService {
         OrderItem existing = orderItemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("OrderItem not found: " + itemId));
 
-        Order parent = existing.getOrder();
         RoleGuard.requireAdminRole("You do not have permission to delete this order item", currentUserRole);
 
         orderItemRepository.delete(existing);
@@ -178,13 +185,13 @@ public class OrderItemServiceImpl implements OrderItemService {
      *
      * @param order         the parent {@link Order} that determines the currency code
      * @param service       the {@link Service} whose price is used
-     * @param quantityGrams the item quantity in grams
+     * @param weight the item weight in grams
      * @return a {@link BigDecimal} representing the computed total price
      * @throws NotFoundException if the corresponding service price is not found
      */
     private BigDecimal computePriceFromServicePrice(Order order,
                                                     Service service,
-                                                    Integer quantityGrams)
+                                                    BigDecimal weight)
             throws NotFoundException {
 
         // 1) find ServicePrice for (serviceId, order.currencyCode)
@@ -197,10 +204,11 @@ public class OrderItemServiceImpl implements OrderItemService {
         ));
 
         // 2) Convert grams to KG
-        BigDecimal kilos = BigDecimal.valueOf(quantityGrams)
-                .divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP);
+        BigDecimal kilos = weight.divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP);
 
         // 3) multiply servicePrice × kilos
-        return sp.getPrice().multiply(kilos).setScale(2, RoundingMode.HALF_UP);
+        return sp.getPrice()
+                .multiply(kilos)
+                .setScale(2, RoundingMode.HALF_UP);
     }
 }

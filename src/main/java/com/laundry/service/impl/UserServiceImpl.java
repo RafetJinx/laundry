@@ -1,4 +1,4 @@
-package com.laundry.service;
+package com.laundry.service.impl;
 
 import com.laundry.dto.UserRequestDto;
 import com.laundry.dto.UserResponseDto;
@@ -10,13 +10,12 @@ import com.laundry.exception.UserAlreadyExistsException;
 import com.laundry.helper.RoleGuard;
 import com.laundry.mapper.UserMapper;
 import com.laundry.repository.UserRepository;
+import com.laundry.service.UserService;
 import com.laundry.util.EmailUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.management.relation.Role;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,14 +24,19 @@ import java.util.UUID;
 @Transactional
 public class UserServiceImpl implements UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private MailService mailService;
+    private final MailService mailService;
+
+    public UserServiceImpl(UserRepository userRepository,
+                           PasswordEncoder passwordEncoder,
+                           MailService mailService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.mailService = mailService;
+    }
 
     @Override
     public UserResponseDto createUser(UserRequestDto dto) throws InvalidEmailException, UserAlreadyExistsException {
@@ -64,6 +68,7 @@ public class UserServiceImpl implements UserService {
                 && userRepository.existsByUsername(dto.getUsername())) {
             throw new UserAlreadyExistsException("Username already exists: " + dto.getUsername());
         }
+
         if (!user.getEmail().equals(dto.getEmail())) {
             if (!EmailUtil.isEmailValid(dto.getEmail())) {
                 throw new InvalidEmailException("Invalid email address");
@@ -72,6 +77,7 @@ public class UserServiceImpl implements UserService {
                 throw new UserAlreadyExistsException("Email already in use: " + dto.getEmail());
             }
         }
+
         User temp = UserMapper.toEntity(dto);
         user.setUsername(temp.getUsername());
         user.setDisplayName(temp.getDisplayName());
@@ -152,13 +158,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void initiatePasswordReset(String email) throws NotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("No user found with email: " + email));
-        String token = UUID.randomUUID().toString();
-        user.setResetToken(token);
-        user.setResetTokenExpiresAt(LocalDateTime.now().plusHours(1));
-        userRepository.save(user);
-        mailService.sendResetPasswordEmail(user, token);
+        userRepository.findByEmail(email).ifPresent(user -> {
+            String token = UUID.randomUUID().toString();
+            user.setResetToken(token);
+            user.setResetTokenExpiresAt(LocalDateTime.now().plusMinutes(15));
+            userRepository.save(user);
+            mailService.sendResetPasswordEmail(user, token);
+        });
     }
 
     @Override

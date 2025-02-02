@@ -4,7 +4,6 @@ import com.laundry.dto.*;
 import com.laundry.security.JwtUtil;
 import com.laundry.service.ServiceService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +15,11 @@ import java.util.List;
 @Slf4j
 public class ServiceController {
 
-    @Autowired
-    private ServiceService serviceService;
+    private final ServiceService serviceService;
+
+    public ServiceController(ServiceService serviceService) {
+        this.serviceService = serviceService;
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<ServiceResponseDto>> createService(

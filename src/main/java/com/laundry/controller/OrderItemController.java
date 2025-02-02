@@ -4,7 +4,6 @@ import com.laundry.dto.*;
 import com.laundry.security.JwtUtil;
 import com.laundry.service.OrderItemService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +15,11 @@ import java.util.List;
 @RequestMapping("/api/orders/{orderId}/items")
 public class OrderItemController {
 
-    @Autowired
-    private OrderItemService orderItemService;
+    private final OrderItemService orderItemService;
+
+    public OrderItemController(OrderItemService orderItemService) {
+        this.orderItemService = orderItemService;
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<OrderItemResponseDto>> createOrderItem(

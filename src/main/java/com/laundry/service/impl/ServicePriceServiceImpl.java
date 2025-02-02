@@ -1,4 +1,4 @@
-package com.laundry.service;
+package com.laundry.service.impl;
 
 import com.laundry.dto.ServicePriceRequestDto;
 import com.laundry.dto.ServicePriceResponseDto;
@@ -11,8 +11,8 @@ import com.laundry.helper.RoleGuard;
 import com.laundry.mapper.ServicePriceMapper;
 import com.laundry.repository.ServicePriceRepository;
 import com.laundry.repository.ServiceRepository;
+import com.laundry.service.ServicePriceService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -41,14 +41,19 @@ import java.util.List;
 @Transactional
 public class ServicePriceServiceImpl implements ServicePriceService {
 
-    @Autowired
-    private ServiceRepository serviceRepository;
+    private final ServiceRepository serviceRepository;
 
-    @Autowired
-    private ServicePriceRepository servicePriceRepository;
+    private final ServicePriceRepository servicePriceRepository;
 
-    @Autowired
-    private TcmbCurrencyService tcmbCurrencyService;
+    private final TcmbCurrencyService tcmbCurrencyService;
+
+    public ServicePriceServiceImpl(ServiceRepository serviceRepository,
+                                   ServicePriceRepository servicePriceRepository,
+                                   TcmbCurrencyService tcmbCurrencyService) {
+        this.serviceRepository = serviceRepository;
+        this.servicePriceRepository = servicePriceRepository;
+        this.tcmbCurrencyService = tcmbCurrencyService;
+    }
 
     @Override
     public ServicePriceResponseDto createServicePrice(Long serviceId,
@@ -67,10 +72,8 @@ public class ServicePriceServiceImpl implements ServicePriceService {
                     + " already exists for service ID " + serviceId);
         }
 
-        // Create the main price entry
         ServicePrice mainEntity = handleMainPriceCreation(service, requestDto);
 
-        // Generate or update other currencies based on the newly added price
         syncOtherCurrencies(service, requestDto.getPrice(), requestDto.getCurrencyCode());
 
         return ServicePriceMapper.toDto(mainEntity);

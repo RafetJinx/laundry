@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.Parameter;              // Example for Open
 import io.swagger.v3.oas.annotations.responses.ApiResponse;  // Example for OpenAPI
 import io.swagger.v3.oas.annotations.responses.ApiResponses; // Example for OpenAPI
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -37,8 +36,11 @@ import java.util.List;
 @Slf4j
 public class ServicePriceController {
 
-    @Autowired
-    private ServicePriceService servicePriceService;
+    private final ServicePriceService servicePriceService;
+
+    public ServicePriceController(ServicePriceService servicePriceService) {
+        this.servicePriceService = servicePriceService;
+    }
 
     /**
      * Creates a ServicePrice record for the specified service.

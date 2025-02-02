@@ -1,4 +1,4 @@
-package com.laundry.service;
+package com.laundry.service.impl;
 
 import com.laundry.exception.InternalServerErrorException;
 import com.laundry.exception.RestClientException;
