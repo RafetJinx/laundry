@@ -43,7 +43,7 @@ build/
 
 
 ### application.properties ###
-application.properties
+
 config.properties
 .env
 src/main/resources/application.properties
