@@ -98,8 +98,8 @@ services:
       - /path/to/your/local/folder:/var/lib/mysql
 ```
 > **Important Note:**  
-> You must fill in the following environment variables in your `docker-compose.yml` file:
-> Your application.properties file must be located in ***startapp/docker-compose.yml***.
+> You must fill in the following environment variables in your `docker-compose.yaml` file:
+> Your docker-compose.yaml file must be located in ***startapp/docker-compose.yaml***.
 >
 > - `MYSQL_DATABASE`
 > - `MYSQL_PASSWORD`
