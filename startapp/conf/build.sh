@@ -28,7 +28,7 @@ elif [ "$answer" = "2" ]; then
 
     echo "Running the application..."
     # Run the JAR file directly if skipping build
-    java -jar target/demo-0.0.1-SNAPSHOT.jar  # Correct the path to the JAR file
+    java -jar target/demo-1.0.0.jar  # Correct the path to the JAR file
 
 else
     echo "Invalid choice. Please enter 1 or 2."
