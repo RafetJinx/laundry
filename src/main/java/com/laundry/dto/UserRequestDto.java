@@ -3,10 +3,13 @@ package com.laundry.dto;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 
 @Value
 @Builder
+
 public class UserRequestDto {
 
     @JsonView(Views.Create.class)
